@@ -1,76 +1,63 @@
-import React, { Component, Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Row } from "reactstrap";
 import { Colxx, Separator } from "../../../../components/common/CustomBootstrap";
 import Breadcrumb from "../../../../containers/navs/Breadcrumb";
 import swal from 'sweetalert';
-
-import { connect } from 'react-redux';
-import { setDeleted, unsetDeleted, getDetails, selectProduct, consume, setMessage, unsetMessage, 
-  unsetError, deleteItem, emergencyCancellation } from '../../../../redux/packages/actions';
+import service from '../service';
 
 import DetailsComponent from './DetailsComponent';
 import ConsumptionHistory from "./ConsumptionHistory";
 import ActionsCard from "./ActionsCard";
 
-class PackageDetails extends Component {
+function PackageDetailsPage(props){
 
-  constructor(props) {
-    super(props);
-    console.log(`PackageDetails`);
-  }
+  const itemId = props.match.params.id;
 
-  componentDidMount = () => {
-    this.props.getDetails(this.props.match.params.id);
-  }
+  const [loading, setLoading] = useState(true); 
+  const [item, setItem] = useState({});
 
-  componentDidUpdate = (prevProps) => {
-    if (this.props.deleted) {
-      swal("Success!", "Package deleted!", "success");
-      this.props.unsetDeleted();
-      this.props.history.push("/app/packages/list");
+  const loadItem = async (id) => {
+    setLoading(true);
+    let r = await service.getItem(id);
+    if (r.error){
+      swal("Errror!",r.error,"error");
+      return;
     }
-    if (this.props.message) {
-      swal("Success!", this.props.message, "success");
-      this.props.unsetMessage();
-    }
-    if (this.props.error) {
-      swal("Error!", this.props.error, "error");
-      this.props.unsetError();
-    }
+    setItem(r.data);
+    setLoading(false);
   }
 
-  render() {
-    return (
-      <Fragment>
-        {this.props.loading && <div className="loading" />}
-        <Row>
-          <Colxx xxs="12">
-            <Breadcrumb heading="menu.packages" match={this.props.match} />
-            <Separator className="mb-5" />
-          </Colxx>
-        </Row>
+  /* eslint react-hooks/exhaustive-deps: 0 */  
+  useEffect(()=>{
+    if (!itemId) {
+      swal("Error!", "No ID", "error");
+      return;
+    }
+    loadItem(itemId)
+  },[]);
 
-        <Row>
-
-          <Colxx xxs="12" md="12" xl="4" className="col-left mb-2">
-            <DetailsComponent {...this.props} />
-          </Colxx>
-
-          <Colxx xxs="12" md="12" xl="4" className="col-left mb-2">
-            <ConsumptionHistory {...this.props} />
-          </Colxx>
-
-          <Colxx xxs="12" md="12" xl="4" className="col-left mb-2">
-            <ActionsCard {...this.props} />
-          </Colxx>
-
-        </Row>
-      </Fragment>
-    );
-  }
+  return (
+    <Fragment>
+      {loading && <div className="loading" />}
+      <Row>
+        <Colxx xxs="12">
+          <Breadcrumb heading="menu.packages" match={props.match} />
+          <Separator className="mb-5" />
+        </Colxx>
+      </Row>
+      <Row>
+        <Colxx xxs="12" md="12" xl="4" className="col-left mb-2">
+          <DetailsComponent details={item} />
+        </Colxx>
+        <Colxx xxs="12" md="12" xl="4" className="col-left mb-2">
+          <ConsumptionHistory details={item} />
+        </Colxx>
+        <Colxx xxs="12" md="12" xl="4" className="col-left mb-2">
+          <ActionsCard details={item} refresh={()=>loadItem(itemId)} />
+        </Colxx>
+      </Row>
+    </Fragment>
+  );
 }
 
-const mapStateToProps = (state) => ({...state.packagesReducer})
-const mapDispatchToProps = { setDeleted, unsetDeleted, getDetails, 
-    selectProduct, consume, setMessage, unsetMessage, deleteItem, unsetError, emergencyCancellation }
-export default connect(mapStateToProps, mapDispatchToProps)(PackageDetails) 
+export default PackageDetailsPage;

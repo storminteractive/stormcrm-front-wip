@@ -1,90 +1,112 @@
-import React, {useEffect} from "react";
-import { Row, Button, UncontrolledDropdown, DropdownMenu, DropdownItem, DropdownToggle } from "reactstrap";
-import { NavLink } from "react-router-dom";
+import React, { useState, Fragment, useContext } from "react";
+import { Row, Collapse, Button, InputGroup, Input, Card, CardBody, Form, FormGroup, Label, ButtonGroup, ButtonDropdown, DropdownToggle, DropdownMenu, DropdownItem } from "reactstrap";
+import Select from "react-select";
 import { Colxx, Separator } from "../../../../components/common/CustomBootstrap";
 import Breadcrumb from "../../../../containers/navs/Breadcrumb";
+import "./styles.css";
+import { SearchContext } from '../context/searchProvider';
 
-import { connect } from 'react-redux';
-import { getItems, setSearchField, setSorting } from '../../../../redux/actions';
+function ListPageHeading(props) {
 
-const PackagePageHeading = (props) => {
+  const [buttonDropdownOpen, setButtonDropdownOpen] = useState(false);
+  const [filterBoxOpen, setFilterBoxOpen] = useState(false);
 
+  const { searchValue, sortOptions, sortColumn, sortDirection, sortDirectionOptions, handleSearchChange } = useContext(SearchContext);
+  console.log("ListPageHeading -> searchValue, sortOptions, sortColumn, sortDirection, sortDirectionOptions, handleSearchChange:", searchValue, sortOptions, sortColumn, sortDirection, sortDirectionOptions, handleSearchChange);
 
-  /* eslint react-hooks/exhaustive-deps: 0 */  
-  useEffect(() => { 
-    props.getItems(props.searchField, props.selectedSortOption.column, props.sortDirection, props.limit)
-  }, [props.selectedSortOption, props.sortDirection]);
-
-  const handleSearchChange = (e) => {
-    let searchFieldValue = e.target.value;
-    props.setSearchField(searchFieldValue);
-    if (searchFieldValue.length>=3) { props.getItems(e.target.value, props.selectedSortOption.column, props.sortDirection);}
-    if (searchFieldValue.length===0) { props.getItems(e.target.value, props.selectedSortOption.column, props.sortDirection);}
+  const searchKey = (e) => {
+    let txt = e.target.value
+    console.log("Search pressed: ",txt);
   }
 
-  const handleChangeOrder = async (newSorting) => {
-    await props.setSorting(newSorting);
-  }
+  return (
+    <Row>
+      <Colxx xxs="12">
+        <div className="mb-2">
+          <h1>Package list</h1>
+          <div className="text-zero top-right-button-container">
 
-  //console.log(`Packages heading props:`, props);
+            <ButtonGroup color="primary" className="mb-2 w-100">
+              <Button color="primary" className="simple-icon-plus" onClick={()=>{props.history.push('/app/packages/add')}}><span className="pl-2">ADD NEW</span></Button>
+              <ButtonDropdown color="primary" isOpen={buttonDropdownOpen} toggle={()=>setButtonDropdownOpen(!buttonDropdownOpen)}>
+                <DropdownToggle color="primary" caret>
+                  OPTIONS
+                </DropdownToggle>
+                <DropdownMenu>
+                  <DropdownItem>
+                    Export
+                  </DropdownItem>
+                </DropdownMenu>
+              </ButtonDropdown>
+            </ButtonGroup>
 
-    return (
-      <Row>
-        <Colxx xxs="12">
-          <div className="mb-2">
-            <h1>Packages list</h1>
-            <div className="text-zero top-right-button-container">
-              
-              <NavLink to="/app/packages/add" location={{}} className="list-item-heading mb-1 truncate w-40 w-xs-100">
-                <Button color="primary" size="sm" className="top-right-button">ADD NEW</Button>
-              </NavLink>{" "}
-              <NavLink to="#" location={{}} className="list-item-heading mb-1 truncate w-40 w-xs-100">
-                <Button color="primary" size="sm" className="top-right-button">EXPORT</Button>
-              </NavLink>
-
-            </div>
-            <Breadcrumb match={props.match} />
           </div>
+          <Breadcrumb match={props.match} />
+        </div>
 
-          <div className="mb-2">
-              <div className="d-block d-md-inline-block pt-1">
+        <Row>
+          <Colxx xxs="12" className="mb-3">
+            
+            <InputGroup className="mb-3">
+              <Input className="mysearch" placeholder={"Search"} name="keyword" id="search" onKeyUp={e => searchKey(e)} />
+            </InputGroup>
 
-                <UncontrolledDropdown direction={props.sortDirection==='asc'?"up":"down"} className="mr-1 float-md-left btn-group mb-1">
-                  
-                  <DropdownToggle caret color="outline-dark" size="xs">
-                    Order by {props.selectedSortOption.label}
-                  </DropdownToggle>
+            <Fragment>
+                <div style={{ 'borderColor': '#d7d7d7', 'borderWidth': 1, 'borderStyle': 'solid', 'borderRadius': 10, 'backgroundColor': 'white' }}>
+                  <Button color="link" style={{ 'fontWeight': 'bold', 'color': 'black' }} onClick={() => setFilterBoxOpen(!filterBoxOpen)} aria-expanded={filterBoxOpen}>
+                    Advanced filtering
+                  </Button>
+                  <Collapse isOpen={filterBoxOpen}>
 
-                  <DropdownMenu>
-                    {props.sortOptions.map((sortOption, index) => {
-                      return (
-                        <DropdownItem key={index} onClick={() => handleChangeOrder({column: sortOption.column, label: sortOption.label})}>
-                          {sortOption.label}
-                        </DropdownItem>
-                      )
-                    })}
-                  </DropdownMenu>
+                    <Card>
+                      <CardBody>
+                        <Form>
+                          <FormGroup row>
 
-                </UncontrolledDropdown>
+                            <Colxx sm={6}>
+                              <FormGroup>
+                                <Label for="sortColumn">Sort column</Label>
+                                <Select
+                                  className="react-select"
+                                  classNamePrefix="react-select"
+                                  name="sortColumn"
+                                  value={sortColumn}
+                                  // onChange={e => { console.log(e) }}
+                                  options={sortOptions}
+                                />
+                              </FormGroup>
+                            </Colxx>
 
-                <div className="search-sm d-inline-block float-md-left mr-1 mb-1 align-top">
-                  <input
-                    type="text"
-                    name="keyword"
-                    id="search"
-                    placeholder={'Search'}
-                    onKeyUp={e => handleSearchChange(e)}
-                  />
+                            <Colxx sm={6}>
+                              <FormGroup>
+                                <Label for="sortDirection">Sort direction</Label>
+                                <Select
+                                  className="react-select"
+                                  classNamePrefix="react-select"
+                                  name="sortDirection"
+                                  value={sortDirection}
+                                  // onChange={e => { console.log(e) }}
+                                  options={sortDirectionOptions}
+                                />
+                              </FormGroup>
+                            </Colxx>
+
+                          </FormGroup>
+                        </Form>
+                      </CardBody>
+                    </Card>
+
+                  </Collapse>
                 </div>
+              </Fragment>
+          </Colxx>
+        </Row>
 
-              </div>
-          </div>
-          <Separator className="mb-5" />
-        </Colxx>
-      </Row>
-    );
+        <Separator className="mb-3 mt-1" />
+
+      </Colxx>
+    </Row>
+  );
 }
 
-const mapStateToProps = (state) => ({...state.packagesReducer});
-const mapDispatchToProps = { getItems, setSearchField, setSorting }
-export default connect(mapStateToProps, mapDispatchToProps)(PackagePageHeading)
+export default ListPageHeading;

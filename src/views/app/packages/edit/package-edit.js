@@ -1,104 +1,109 @@
-import React, { Component, Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { Card, CardBody, Input, Row, Button, Form, FormGroup } from "reactstrap";
 import { Colxx, Separator } from "../../../../components/common/CustomBootstrap";
 import Breadcrumb from "../../../../containers/navs/Breadcrumb";
 import swal from "sweetalert";
-import "react-datepicker/dist/react-datepicker.css";
+import service from '../service';
 
-import { connect } from 'react-redux';
-import { loadUpdate, update, setInsertField, setCustomer, setProduct, unsetError, unsetMessage, unsetUpdated } from '../../../../redux/packages/actions';
+function PackageEditPage(props) {
 
-class PackageEditPage extends Component {
+  const itemId = props.match.params.id;
 
-  constructor(props) {
-    super(props);
-    console.log(`Package edit`)
+  const [item, setItem] = useState({
+    id: itemId,
+    note: "",
+    code: ""
+  });
+
+  const [loading,setLoading] = useState(true);
+
+  /* eslint react-hooks/exhaustive-deps: 0 */  
+  useEffect(()=>{
+    if (!itemId) {
+      swal("Error!", "No ID", "error");
+      return;
+    }
+    loadItem(itemId)
+  },[]);
+
+  const handleSave = async () => {
+    console.log("I will send the following item for save: ", item);
+    let r = await service.updateItem(itemId, item)
+    console.log("handleSave -> r:", r);
+    if (r.error){
+      swal("Errror!",r.error,"error");
+      return;
+    }
+    swal("Success!", "Item saved successfully", "success");
+    props.history.push( "/app/packages/details/" + itemId)
   }
 
-  componentDidMount = async () => {
-    let id = this.props.match.params.id;
-    console.log(`PackageEditPage -> componentDidMount -> id`, id);
-    if (!id) {
-      swal("Error", "Item ID is missing", "error");
-      this.props.history.push('/app/packages');
-    } else {
-      this.props.loadUpdate(id);
+  const loadItem = async (id) => {
+    let r = await service.getItem(id);
+    if (r.error){
+      swal("Errror!",r.error,"error");
+      return;
     }
+    delete(r.data._id);
+    delete(r.data.__v);
+    delete(r.data.created);
+    setItem(r.data);
+    setLoading(false);
   }
 
-  componentDidUpdate = () => {
-    if (this.props.error) {
-      swal("Error!", this.props.error, "error");
-      this.props.unsetError();
-    }
+  return (
+    <Fragment>
+      {loading && <div className="loading" />}
+      <Row>
+        <Colxx xxs="12">
+          <Breadcrumb heading="survey.edit" match={props.match} />
+          <Separator className="mb-5" />
+        </Colxx>
+      </Row>
 
-    if (this.props.updated) {
-      let redirUrl = "/app/packages/details/" + this.props.updated;
-      console.log("PackageEditPage -> redirUrl", redirUrl);
-      swal("Success!", "Package updated successfully", "success");
-      this.props.unsetUpdated();
-      this.props.history.push(redirUrl);
-    }
-
-  }
-
-  render() {
-    return (
-      <Fragment>
-        {this.props.loading && <div className="loading" />}
-        <Row>
-          <Colxx xxs="12">
-            <Breadcrumb heading="survey.edit" match={this.props.match} />
-            <Separator className="mb-5" />
-          </Colxx>
-        </Row>
-
-        <Row className="mb-4">
-          <Colxx xxs="3"></Colxx>
-          <Colxx xxs="6">
-            <Card>
-              <CardBody>
-                <div className="mb-5">
-                  <div className="d-flex flex-row align-items-center mb-3">
-                    <i className="large-icon initial-height iconsminds-dollar"></i>
-                    <div className="pl-3 pt-2 pr-2 pb-2">
-                      <div className="list-item-heading mb-1">
-                        <h2>Package</h2>
-                      </div>
+      <Row className="mb-4">
+        <Colxx xxs="3"></Colxx>
+        <Colxx xxs="6">
+          <Card>
+            <CardBody>
+              <div className="mb-5">
+                <div className="d-flex flex-row align-items-center mb-3">
+                  <i className="large-icon initial-height iconsminds-dollar"></i>
+                  <div className="pl-3 pt-2 pr-2 pb-2">
+                    <div className="list-item-heading mb-1">
+                      <h2>Package</h2>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <Form>
-                  <FormGroup row>
+              <Form>
+                <FormGroup row>
 
-                    <Colxx sm={12}>
-                      <FormGroup>
-                        <Input type="text" name="note" id="note" placeholder="OPTIONAL note" value={this.props.insertField.note?this.props.insertField.note:''} onChange={(e) => this.props.setInsertField('note',e.target.value)} />
-                      </FormGroup>
-                    </Colxx>
+                  <Colxx sm={12}>
+                    <FormGroup>
+                      <Input type="text" name="note" id="note" placeholder="OPTIONAL note" value={item.note?item.note:''} onChange={(e) => setItem({...item, note: e.target.value})} />
+                    </FormGroup>
+                  </Colxx>
 
-                    <Colxx sm={12}>
-                      <FormGroup>
-                        <Input type="text" name="code" id="code" placeholder="OPTIONAL code" value={this.props.insertField.code?this.props.insertField.code:''} onChange={(e) => this.props.setInsertField('code',e.target.value)} />
-                      </FormGroup>
-                    </Colxx>
+                  <Colxx sm={12}>
+                    <FormGroup>
+                      <Input type="text" name="code" id="code" placeholder="OPTIONAL code" value={item.code?item.code:''} onChange={(e) => setItem({...item, code: e.target.value})} />
+                    </FormGroup>
+                  </Colxx>
 
-                    <Colxx sm={12}>
-                      <Button color="primary" size="block" onClick={() => this.props.update(this.props.match.params.id, this.props.insertField)}>SAVE</Button>
-                    </Colxx>
+                  <Colxx sm={12}>
+                    <Button color="primary" size="block" disabled={loading} onClick={handleSave}>SAVE</Button>
+                  </Colxx>
 
-                  </FormGroup>
-                </Form>
-              </CardBody>
-            </Card>
-          </Colxx>
-        </Row>
-      </Fragment>
-    );
-  }
+                </FormGroup>
+              </Form>
+            </CardBody>
+          </Card>
+        </Colxx>
+      </Row>
+    </Fragment>
+  );
 }
 
-const mapStateToProps = (state) => ({...state.packagesReducer})
-const mapDispatchToProps = { loadUpdate, update, setInsertField, setCustomer, setProduct, unsetMessage, unsetError, unsetUpdated }
-export default connect(mapStateToProps, mapDispatchToProps)(PackageEditPage);
+export default PackageEditPage;

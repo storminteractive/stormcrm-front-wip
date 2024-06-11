@@ -1,0 +1,22 @@
+.mysearch {
+    background-image: url('/assets/img/search.svg');
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 1%;
+    background-position: 98% 50%;
+    border-radius: 10px;
+    padding-right: 10px;
+}
+
+@media (max-width: 576px) {
+    .mysearch {
+      background-size: 7%;
+      background-position: 95% 50%;
+    }
+}
+
+.mybadge {
+    font-size: 13px;
+    height: 35px;
+    padding: 0.9em 0.75em 0.6em 0.75em;
+}

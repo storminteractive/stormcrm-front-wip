@@ -2,14 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Card, CardBody, Input, Row, Button, Form, FormGroup } from "reactstrap";
 import { Colxx, Separator } from "../../../../components/common/CustomBootstrap";
 import Breadcrumb from "../../../../containers/navs/Breadcrumb";
-import { Creatable } from "react-select";
 import DatePicker from "react-datepicker";
 import moment from "moment";
 import swal from "sweetalert";
 import "react-datepicker/dist/react-datepicker.css";
-import { connect } from 'react-redux';
-import { insert, setInsertField, setCustomer, setProduct, unsetError, unsetMessage, unsetInserted } from '../../../../redux/packages/actions';
 import CustomersAsync from '../../../../containers/CustomersAsync';
+import ProductsAsync from '../../../../containers/ProductsAsync';
 import service from '../service';
 
 function PackageAddPage(props) {
@@ -17,7 +15,7 @@ function PackageAddPage(props) {
   const [insertItem, setInsertItem] = useState({
     customerId: "",
     customerName: "",
-    productId: "",
+    productName: "",
     remainingUsage: "",
     expiry: "",
     note: "",
@@ -28,7 +26,6 @@ function PackageAddPage(props) {
 
   /* eslint react-hooks/exhaustive-deps: 0 */  
   useEffect(() => {
-    // console.log("Props.match has changed: ", props.match)
     let customerId = props.match.params.customerid;
     if (customerId) {
       console.log("Will use customerId: ", customerId)
@@ -40,19 +37,35 @@ function PackageAddPage(props) {
   useEffect(() => {
     if (insertedId) {
       let redirUrl = "/app/packages/details/" + insertedId;
-      swal("Success!", "Package added successfully", "success");
       setInsertedId(null);
+      swal("Success!", "Package added successfully", "success");
       props.history.push(redirUrl);
     }
   }, [insertedId]);
 
   const handleCustomerChange = (customerDetails) => {
-    setInsertItem({...insertItem, customerId: customerDetails.value, customerName: customerDetails.label})
+    setInsertItem({
+      ...insertItem, 
+      customerId: customerDetails.value, 
+      customerName: customerDetails.label
+    })
+  }
+
+  const handleProductChange = (productDetails) => {
+    setInsertItem({
+      ...insertItem,
+      productName: productDetails.label
+    });
   }
 
   const handleSave = async () => {
-    const [error, data ] = service.insertItem(insertItem);
-    console.log("handleSave= -> error, data:", error, data); 
+    let r = await service.insertItem(insertItem);
+    if (r.error) {
+      swal("Error!", r.error, "error");
+      return;
+    }
+    swal("Success", "Item added successsfully","success")
+    setInsertedId(r.data._id);
   }
 
 
@@ -92,31 +105,32 @@ function PackageAddPage(props) {
 
                   <Colxx sm={12}>
                     <FormGroup>
-                      <Creatable options={props.selectProductOptions} onChange={props.setProduct} value={props.selectedProduct} name="productSelect" placeholder="Select a product"/>
+                      <ProductsAsync selectedId={insertItem.productId} onChange={handleProductChange} />
+                      {/* <Creatable options={selectProductOptions} onChange={handleProductChange} value={insertItem.productId} name="productSelect" placeholder="Select a product"/> */}
                     </FormGroup>
                   </Colxx>
 
                   <Colxx sm={12}>
                     <FormGroup>
-                      <Input type="text" name="remainingUsage" id="remainingUsage" placeholder="Number of sessions" value={props.insertField.remainingUsage} onChange={(e) => props.setInsertField('remainingUsage', e.target.value)}/>
+                      <Input type="text" name="remainingUsage" id="remainingUsage" placeholder="Number of sessions" value={insertItem.remainingUsage} onChange={(e) => setInsertItem({...insertItem, remainingUsage: e.target.value})}/>
                     </FormGroup>
                   </Colxx>
 
                   <Colxx sm={12}>
                     <FormGroup>
-                      <DatePicker selected={props.insertField.expiry?moment(props.insertField.expiry):null} name="expiry" onChange={(value) => props.setInsertField('expiry',moment(value).format("YYYY-MM-DD"))} placeholderText="Choose expiry date"/>
+                      <DatePicker selected={insertItem.expiry?moment(insertItem.expiry):null} name="expiry" onChange={(value) => setInsertItem({...insertItem, expiry: moment(value).format("YYYY-MM-DD")})} placeholderText="Choose expiry date"/>
                     </FormGroup>
                   </Colxx>
 
                   <Colxx sm={12}>
                     <FormGroup>
-                      <Input type="text" name="note" id="note" placeholder="OPTIONAL note" value={props.insertField.note} onChange={(e) => props.setInsertField('note',e.target.value)} />
+                      <Input type="text" name="note" id="note" placeholder="OPTIONAL note" value={insertItem.note} onChange={(e) => setInsertItem({...insertItem, note: e.target.value})} />
                     </FormGroup>
                   </Colxx>
 
                   <Colxx sm={12}>
                     <FormGroup>
-                      <Input type="text" name="code" id="code" placeholder="OPTIONAL code" value={props.insertField.code} onChange={(e) => props.setInsertField('code',e.target.value)} />
+                      <Input type="text" name="code" id="code" placeholder="OPTIONAL code" value={insertItem.code} onChange={(e) => setInsertItem({...insertItem, code: e.target.value})} />
                     </FormGroup>
                   </Colxx>
 
@@ -134,6 +148,4 @@ function PackageAddPage(props) {
   );
 }
 
-const mapStateToProps = (state) => ({...state.packagesReducer})
-const mapDispatchToProps = { insert, setInsertField, setCustomer, setProduct, unsetMessage, unsetError, unsetInserted }
-export default connect(mapStateToProps, mapDispatchToProps)(PackageAddPage);
+export default PackageAddPage;
